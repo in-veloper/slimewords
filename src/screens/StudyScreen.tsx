@@ -106,7 +106,7 @@ export default function StudyScreen({ profile, words, onDone, onBack }: Props) {
         </View>
 
         <Jelly color={C.lime} dark={darken(C.lime)} onPress={next} style={styles.ctaWrap} inner={styles.cta}>
-          <Text style={styles.ctaText}>{isLast ? '🧪 테스트 보러 가기' : '다음 단어 →'}</Text>
+          <Text style={styles.ctaText}>{isLast ? '🧪 테스트 보러 가기' : '다음 단어'}</Text>
         </Jelly>
       </View>
     </View>

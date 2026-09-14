@@ -43,7 +43,17 @@ export default function TraceCanvas({ word }: Props) {
   const [paths, setPaths] = useState<string[]>([]);
   const drawing = useRef(false);
   const canvasRef = useRef<View>(null);
+  // 안드로이드의 locationX/Y는 이벤트를 실제로 받은 하위 뷰를 기준으로
+  // 계산될 수 있다. 그래서 화면 기준 pageX/Y에서 캔버스의 실제 창 좌표를
+  // 빼서, 어떤 하위 뷰 위에서 시작해도 항상 같은 좌표계를 사용한다.
+  const canvasWindowOrigin = useRef({ x: 0, y: 0 });
   const fontSize = useMemo(() => guideFontSize(word), [word]);
+
+  function updateCanvasWindowOrigin() {
+    canvasRef.current?.measureInWindow((x, y) => {
+      canvasWindowOrigin.current = { x, y };
+    });
+  }
 
   function appendPoint(x: number, y: number, isStart: boolean) {
     setPaths((prev) => {
@@ -101,13 +111,16 @@ export default function TraceCanvas({ word }: Props) {
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (e: GestureResponderEvent) => {
         drawing.current = true;
-        const { locationX, locationY } = e.nativeEvent;
-        appendPoint(locationX, locationY, true);
+        updateCanvasWindowOrigin();
+        const { pageX, pageY } = e.nativeEvent;
+        const origin = canvasWindowOrigin.current;
+        appendPoint(pageX - origin.x, pageY - origin.y, true);
       },
       onPanResponderMove: (e: GestureResponderEvent) => {
         if (!drawing.current) return;
-        const { locationX, locationY } = e.nativeEvent;
-        appendPoint(locationX, locationY, false);
+        const { pageX, pageY } = e.nativeEvent;
+        const origin = canvasWindowOrigin.current;
+        appendPoint(pageX - origin.x, pageY - origin.y, false);
       },
       onPanResponderRelease: () => {
         drawing.current = false;
@@ -120,6 +133,7 @@ export default function TraceCanvas({ word }: Props) {
       <View
         ref={canvasRef}
         style={[styles.canvas, noSelect as any]}
+        onLayout={updateCanvasWindowOrigin}
         {...(Platform.OS === 'web' ? {} : panResponder.panHandlers)}
       >
         <Text style={[styles.guide, { fontSize }, noSelect as any]} pointerEvents="none" selectable={false}>

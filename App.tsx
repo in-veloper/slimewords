@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -174,14 +174,14 @@ export default function App() {
   if (loading || !fontsReady) {
     return (
       <SafeAreaProvider>
-        <View style={[styles.safe, { backgroundColor: C.milk }]} />
+        <SafeAreaView style={[styles.safe, { backgroundColor: C.milk }]} />
       </SafeAreaProvider>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <View style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top', 'right', 'bottom', 'left']}>
         <StatusBar style="dark" />
 
         {screen === 'pick' && (
@@ -233,7 +233,7 @@ export default function App() {
         {screen === 'stickers' && activeProfile && (
           <StickerScreen profile={activeProfile} onBack={() => setScreen('menu')} />
         )}
-      </View>
+      </SafeAreaView>
 
       <ProfileModal
         visible={profileModal.open}
