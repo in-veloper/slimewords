@@ -39,7 +39,7 @@ export default function HomeScreen({ profiles, onPick, onEdit, onAdd, canAdd }: 
                     <View style={styles.pickMeta}>
                       <Text style={styles.metaText}>{difficultyLabel} · </Text>
                       <Crown size={18} />
-                      <Text style={styles.metaText}> {p.progress.currentStep} · 스티커 {p.progress.completedSteps.length}장</Text>
+                      <Text style={styles.metaText}> {p.progress.currentStep} · 스티커 {p.progress.stickers.length}장</Text>
                     </View>
                   </View>
                 </Pressable>

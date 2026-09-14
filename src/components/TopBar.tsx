@@ -12,13 +12,22 @@ interface Props {
   onBack?: () => void;
   onWho?: () => void;
   crownCount: number;
+  // 정답을 맞히면 왕관이 문제 카드에서 이 알약 위치로 날아간다(QuizScreen) —
+  // 그 목적지 좌표를 화면에 렌더링된 실제 위치로 알려준다.
+  onPillLayout?: (pos: { x: number; y: number }) => void;
 }
 
 // semlime 의 상단바 그대로 — 뒤로가기·프로필칩·왕관(스티커 수) 알약을
 // 늘어놓는다. 왕관 수가 늘어나는 순간 알약이 통통 튀어서 "받았다" 는
 // 느낌을 준다.
-export default function TopBar({ profile, showBack, onBack, onWho, crownCount }: Props) {
+export default function TopBar({ profile, showBack, onBack, onWho, crownCount, onPillLayout }: Props) {
   const bump = useRef(new Animated.Value(0)).current;
+  const pillRef = useRef<View>(null);
+
+  function reportPillPos() {
+    if (!onPillLayout) return;
+    pillRef.current?.measureInWindow((x, y, w, h) => onPillLayout({ x: x + w / 2, y: y + h / 2 }));
+  }
 
   useEffect(() => {
     Animated.sequence([
@@ -46,7 +55,7 @@ export default function TopBar({ profile, showBack, onBack, onWho, crownCount }:
 
       <View style={{ flex: 1 }} />
 
-      <Animated.View style={[styles.pill, { transform: [{ scale }] }]}>
+      <Animated.View ref={pillRef} onLayout={reportPillPos} style={[styles.pill, { transform: [{ scale }] }]}>
         <Crown size={24} />
         <Text style={styles.pillNum}>{crownCount}</Text>
       </Animated.View>

@@ -5,14 +5,14 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { HAT_IDS, Slime } from '../art';
 import { Jelly } from '../Jelly';
 import { C, COLORS, darken, F, R } from '../theme';
-import { DIFFICULTIES, Difficulty } from '../types/word';
+import { DEFAULT_QUIZ_LENGTH, DIFFICULTIES, Difficulty, QUIZ_LENGTHS } from '../types/word';
 
 interface Props {
   visible: boolean;
-  initial?: { name: string; hat: string; color: string; difficulty: Difficulty };
+  initial?: { name: string; hat: string; color: string; difficulty: Difficulty; quizLength: number };
   isNew: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; hat: string; color: string; difficulty: Difficulty }) => void;
+  onSave: (data: { name: string; hat: string; color: string; difficulty: Difficulty; quizLength: number }) => void;
   onReset?: () => void;
   onDelete?: () => void;
 }
@@ -25,6 +25,7 @@ export default function ProfileModal({ visible, initial, isNew, onClose, onSave,
   const [hat, setHat] = useState('plain');
   const [color, setColor] = useState('peach');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [quizLength, setQuizLength] = useState<number>(DEFAULT_QUIZ_LENGTH);
 
   useEffect(() => {
     if (!visible) return;
@@ -32,10 +33,11 @@ export default function ProfileModal({ visible, initial, isNew, onClose, onSave,
     setHat(initial?.hat ?? 'plain');
     setColor(initial?.color ?? 'peach');
     setDifficulty(initial?.difficulty ?? 'easy');
+    setQuizLength(initial?.quizLength ?? DEFAULT_QUIZ_LENGTH);
   }, [visible, initial]);
 
   function submit() {
-    onSave({ name: name.trim() || '친구', hat, color, difficulty });
+    onSave({ name: name.trim() || '친구', hat, color, difficulty, quizLength });
   }
 
   return (
@@ -85,6 +87,19 @@ export default function ProfileModal({ visible, initial, isNew, onClose, onSave,
                 style={[styles.lvBtn, difficulty === d.id && styles.lvSel]}
               >
                 <Text style={[styles.lvText, difficulty === d.id && { color: C.ink }]}>{d.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.label}>테스트 문제 수</Text>
+          <View style={{ flexDirection: 'row', gap: 9 }}>
+            {QUIZ_LENGTHS.map((n) => (
+              <Pressable
+                key={n}
+                onPress={() => setQuizLength(n)}
+                style={[styles.lvBtn, quizLength === n && styles.lvSel]}
+              >
+                <Text style={[styles.lvText, quizLength === n && { color: C.ink }]}>{n}개</Text>
               </Pressable>
             ))}
           </View>

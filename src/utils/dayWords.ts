@@ -19,3 +19,14 @@ export function getStepWords(step: number, difficulty: Difficulty): WordEntry[] 
   }
   return words;
 }
+
+// "실력 뽐내기"(퀵 테스트)용 — 지금 스텝에 묶이지 않고 전체 단어 곳간에서
+// 매번 무작위로 한 판을 뽑는다. 오늘의 단어랑 똑같은 스텝 로직을 쓰면
+// 그 스텝을 통과하기 전까진 계속 같은 단어만 나오는데, 이건 진도와 상관없이
+// "그냥 한 판 해보기" 용도라 매번 다른 단어가 나오는 게 맞다. count 는
+// 프로필에서 고른 문항 수(10/20/30) — 그만큼은 뽑아줘야 buildQuiz 가
+// 모자라지 않게 채울 수 있다.
+export function getRandomWords(count: number): WordEntry[] {
+  const shuffled = [...WORD_LIST].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}

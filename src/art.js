@@ -253,7 +253,7 @@ const Medal = ({ size }) => (
   </Svg>
 );
 
-export const TIERS = { 1: '보통', 2: '멋진', 3: '전설' };
+export const TIERS = { 1: '실버', 2: '골드', 3: '전설' };
 
 const slimeOf = (hat, color) => ({ size }) => <Slime hat={hat} color={color} mood="happy" size={size} />;
 const S = (id, n, tier, Draw) => ({ id, n, tier, Draw });
@@ -297,6 +297,43 @@ export const Back = ({ size = 23, color = INK }) => (
     <Path d="M62 18 L30 50 L62 82" stroke={color} strokeWidth={11} fill="none" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
+// 메뉴 카드용 아이콘 — 이모지 대신 이 앱의 그림 스타일(단색 실루엣 +
+// 옅은 하이라이트 한 번)로 통일한다.
+export const Book = ({ size = 28, color = '#fff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 100 100">
+    <Path d="M50 24 C42 18 26 16 14 20 L14 78 C26 74 42 76 50 82 Z" fill={color} />
+    <Path d="M50 24 C58 18 74 16 86 20 L86 78 C74 74 58 76 50 82 Z" fill={color} opacity={0.78} />
+    <Path d="M50 24 L50 82" stroke={color} strokeWidth={2} opacity={0.5} />
+    <Path d="M22 34 L42 30 M22 46 L42 43" stroke="#fff" strokeWidth={3} opacity={0.4} strokeLinecap="round" />
+  </Svg>
+);
+
+export const Sparkle = ({ size = 28, color = '#fff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 100 100">
+    <Path
+      d="M50 10 C52 32 34 46 14 50 C34 54 52 68 50 90 C48 68 66 54 86 50 C66 46 48 32 50 10 Z"
+      fill={color}
+    />
+    <Circle cx={80} cy={22} r={6} fill={color} opacity={0.75} />
+    <Circle cx={22} cy={78} r={4.4} fill={color} opacity={0.6} />
+  </Svg>
+);
+
+// 다른 메뉴 카드가 전부 앱 안 그림(책·반짝임)을 흰 실루엣으로 쓰는데
+// 스티커 모음만 리본이라는 낯선 도상이었다 — 정작 화면 안에서 모으는 건
+// 슬라임 자신이니, 그 실루엣을 그대로 흰색으로 눌러쓴다. 몸통 윤곽만 있으면
+// 무슨 그림인지 안 읽혀서, 왕관(HATS.king 과 같은 모양)을 얹고 눈도 살짝
+// 어두운 색으로 비쳐 보이게 뚫어 슬라임임을 한눈에 알아볼 수 있게 했다.
+export const SlimeBadge = ({ size = 28, color = '#fff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 100 100">
+    <Path d="M33 20 L36 5 L43 13 L50 2 L57 13 L64 5 L67 20 Z" fill={color} />
+    <Path d={BODY} fill={color} />
+    <Path d={GLOSS} fill="#000" opacity={0.08} />
+    <Ellipse cx={39} cy={63} rx={5} ry={6.3} fill="#000" opacity={0.42} />
+    <Ellipse cx={61} cy={63} rx={5} ry={6.3} fill="#000" opacity={0.42} />
+  </Svg>
+);
+
 export const Pencil = ({ size = 21, color = '#96718F' }) => (
   <Svg width={size} height={size} viewBox="0 0 100 100">
     <Path d="M22 78 L26 62 L68 20 L80 32 L38 74 Z" fill="none" stroke={color} strokeWidth={8} strokeLinejoin="round" />
@@ -308,22 +345,43 @@ export const Check = ({ size = 25, color = '#fff' }) => (
     <Path d="M20 52 L42 74 L80 28" fill="none" stroke={color} strokeWidth={12} strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
-export const Erase = ({ size = 25, color = '#fff' }) => (
+// 실제 사무용 지우개처럼 각진 사각형 대신, 통통한 젤리 지우개로 —
+// 위쪽은 밝은 분홍, 아래쪽 닳는 부분은 살짝 어둡게 해서 진짜 지우개
+// 느낌을 내면서도 이 앱의 말랑한 톤과 맞춘다. 지워지는 순간의 작은
+// 부스러기 점 세 개로 "쓱 지운다"는 느낌을 더했다.
+export const Erase = ({ size = 25, color = '#FF9FB0' }) => (
   <Svg width={size} height={size} viewBox="0 0 100 100">
-    <Path d="M38 22 L88 22 L88 78 L38 78 L12 50 Z" fill="none" stroke={color} strokeWidth={8} strokeLinejoin="round" />
-    <Path d="M52 38 L74 62 M74 38 L52 62" stroke={color} strokeWidth={8} strokeLinecap="round" />
+    <Path
+      d="M30 55 L58 27 C63 22 71 22 76 27 L82 33 C87 38 87 46 82 51 L54 79 Z"
+      fill={color}
+    />
+    <Path d="M30 55 L54 79 L36 79 L18 61 Z" fill={color} opacity={0.65} />
+    <Path d="M58 27 L84 53" stroke="#fff" strokeWidth={3} opacity={0.55} strokeLinecap="round" />
+    <Circle cx={20} cy={72} r={3.4} fill={color} opacity={0.45} />
+    <Circle cx={30} cy={80} r={2.6} fill={color} opacity={0.35} />
+    <Circle cx={13} cy={62} r={2.2} fill={color} opacity={0.35} />
   </Svg>
 );
-export const Speaker = ({ on, size = 23 }) => (
+
+// 사각 실루엣 대신, 젤리처럼 둥글둥글한 몸통 + 나팔에 하이라이트 한 번,
+// 노란 소리 파장 두 겹으로 훨씬 아기자기하게 — 다른 아이콘들(왕관·별)과
+// 톤을 맞춰 파랑+노랑 배색을 그대로 가져왔다.
+export const Speaker = ({ on = true, size = 26 }) => (
   <Svg width={size} height={size} viewBox="0 0 100 100">
-    <Path d="M20 38 L36 38 L54 20 L54 80 L36 62 L20 62 Z" fill={on ? INK : '#C7A9C2'} />
+    <Rect x={8} y={34} width={21} height={32} rx={10.5} fill={on ? '#4EC0E4' : '#C7A9C2'} />
+    <Path
+      d="M28 30 Q52 12 61 18 L61 82 Q52 88 28 70 Z"
+      fill={on ? '#4EC0E4' : '#C7A9C2'}
+    />
+    <Path d="M33 39 Q48 29 54 32 L54 68 Q48 71 33 61 Z" fill="#fff" opacity={0.4} />
     {on ? (
       <G>
-        <Path d="M64 36 Q76 50 64 64" stroke={INK} strokeWidth={7} fill="none" strokeLinecap="round" />
-        <Path d="M74 26 Q92 50 74 74" stroke={INK} strokeWidth={7} fill="none" strokeLinecap="round" opacity={0.5} />
+        <Path d="M71 36 Q82 50 71 64" stroke="#FFC64B" strokeWidth={8} fill="none" strokeLinecap="round" />
+        <Path d="M82 24 Q97 50 82 76" stroke="#FFC64B" strokeWidth={8} fill="none" strokeLinecap="round" opacity={0.55} />
+        <Circle cx={15} cy={19} r={5.2} fill="#FFC64B" opacity={0.9} />
       </G>
     ) : (
-      <Path d="M66 38 L88 62 M88 38 L66 62" stroke="#C7A9C2" strokeWidth={8} strokeLinecap="round" />
+      <Path d="M72 38 L94 62 M94 38 L72 62" stroke="#C7A9C2" strokeWidth={8} strokeLinecap="round" />
     )}
   </Svg>
 );

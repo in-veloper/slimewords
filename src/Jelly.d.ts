@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { StyleProp, ViewStyle } from 'react-native';
+import { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react';
+import { StyleProp, View, ViewStyle } from 'react-native';
 
 export interface JellyProps {
   color: string;
@@ -15,4 +15,4 @@ export interface JellyProps {
   [key: string]: any;
 }
 
-export function Jelly(props: JellyProps): JSX.Element;
+export const Jelly: ForwardRefExoticComponent<JellyProps & RefAttributes<View>>;

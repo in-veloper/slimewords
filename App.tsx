@@ -10,10 +10,10 @@ import { Gaegu_700Bold } from '@expo-google-fonts/gaegu';
 
 import ProfileModal from './src/components/ProfileModal';
 import HomeScreen from './src/screens/HomeScreen';
-import MapScreen from './src/screens/MapScreen';
 import ModeScreen from './src/screens/ModeScreen';
 import QuizScreen from './src/screens/QuizScreen';
 import ResultScreen from './src/screens/ResultScreen';
+import StickerScreen from './src/screens/StickerScreen';
 import StudyScreen from './src/screens/StudyScreen';
 import {
   addProfile,
@@ -27,24 +27,24 @@ import {
   updateProfile,
 } from './src/storage/wordStorage';
 import { C } from './src/theme';
-import { Difficulty, Profile, QuizQuestion, WordEntry } from './src/types/word';
-import { getStepWords } from './src/utils/dayWords';
+import { DEFAULT_QUIZ_LENGTH, Difficulty, Profile, QuizQuestion, WordEntry } from './src/types/word';
+import { getRandomWords, getStepWords } from './src/utils/dayWords';
 import { buildQuiz } from './src/utils/quiz';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const MAX_PROFILES = 8;
 
-type Screen = 'pick' | 'menu' | 'study' | 'quiz' | 'result' | 'map';
+type Screen = 'pick' | 'menu' | 'study' | 'quiz' | 'result' | 'stickers';
 
 interface QuizResult {
   step: number;
   words: WordEntry[];
+  totalCount: number;
   score: number;
   correctCount: number;
   passed: boolean;
-  advanced: boolean;
-  stickerId: string | null;
+  earnedStickerId: string | null;
 }
 
 export default function App() {
@@ -85,7 +85,7 @@ export default function App() {
   const editingProfile = profileModal.editingId ? profiles.find((p) => p.id === profileModal.editingId) : null;
 
   const handleSaveProfile = useCallback(
-    async (data: { name: string; hat: string; color: string; difficulty: Difficulty }) => {
+    async (data: { name: string; hat: string; color: string; difficulty: Difficulty; quizLength: number }) => {
       if (profileModal.editingId) {
         const next = await updateProfile(profileModal.editingId, data);
         setProfiles(next);
@@ -130,9 +130,25 @@ export default function App() {
   }, [activeProfile]);
 
   const startQuiz = useCallback(() => {
-    setQuiz(buildQuiz(playingWords));
+    const quizLength = activeProfile?.quizLength ?? DEFAULT_QUIZ_LENGTH;
+    setQuiz(buildQuiz(playingWords, quizLength));
     setScreen('quiz');
-  }, [playingWords]);
+  }, [playingWords, activeProfile]);
+
+  // 모험 지도가 있던 자리를 대신하는 진입점 — 학습 화면을 거치지 않고
+  // 곧바로 테스트를 만든다. "오늘의 단어"(정해진 스텝)와 달리 진도에 묶이지
+  // 않고 전체 단어 곳간에서 매번 무작위로 뽑는다 — 안 그러면 그 스텝을
+  // 통과하기 전까진 누를 때마다 같은 단어만 계속 나온다.
+  const startQuickQuiz = useCallback(() => {
+    if (!activeProfile) return;
+    const step = activeProfile.progress.currentStep;
+    const quizLength = activeProfile.quizLength ?? DEFAULT_QUIZ_LENGTH;
+    const words = getRandomWords(quizLength);
+    setPlayingStep(step);
+    setPlayingWords(words);
+    setQuiz(buildQuiz(words, quizLength));
+    setScreen('quiz');
+  }, [activeProfile]);
 
   const finishQuiz = useCallback(
     async (score: number, correctCount: number) => {
@@ -140,21 +156,19 @@ export default function App() {
       const applied = await completeStep(activeProfile.id, playingStep, score, playingWords.length);
       if (applied) {
         setProfiles(applied.profiles);
-        const updated = applied.profiles.find((p) => p.id === activeProfile.id);
-        const record = updated?.progress.completedSteps.find((s) => s.step === playingStep);
         setResult({
           step: playingStep,
           words: playingWords,
+          totalCount: quiz.length,
           score,
           correctCount,
           passed: applied.passed,
-          advanced: applied.advanced,
-          stickerId: applied.advanced ? record?.stickerId ?? null : null,
+          earnedStickerId: applied.earnedStickerId,
         });
       }
       setScreen('result');
     },
-    [activeProfile, playingStep, playingWords]
+    [activeProfile, playingStep, playingWords, quiz.length]
   );
 
   if (loading || !fontsReady) {
@@ -184,7 +198,8 @@ export default function App() {
           <ModeScreen
             profile={activeProfile}
             onStudy={startStudy}
-            onOpenMap={() => setScreen('map')}
+            onQuickQuiz={startQuickQuiz}
+            onOpenStickers={() => setScreen('stickers')}
             onBack={() => setScreen('pick')}
             onWho={() => setProfileModal({ open: true, editingId: activeProfile.id })}
           />
@@ -203,20 +218,21 @@ export default function App() {
             profile={activeProfile}
             score={result.score}
             correctCount={result.correctCount}
-            totalCount={result.words.length}
+            totalCount={result.totalCount}
             passed={result.passed}
-            advanced={result.advanced}
-            stickerId={result.stickerId}
+            earnedStickerId={result.earnedStickerId}
             onRetry={() => {
-              setQuiz(buildQuiz(result.words));
+              setQuiz(buildQuiz(result.words, activeProfile.quizLength ?? DEFAULT_QUIZ_LENGTH));
               setScreen('quiz');
             }}
             onHome={() => setScreen('menu')}
-            onMap={() => setScreen('map')}
+            onStickers={() => setScreen('stickers')}
           />
         )}
 
-        {screen === 'map' && activeProfile && <MapScreen profile={activeProfile} onBack={() => setScreen('menu')} />}
+        {screen === 'stickers' && activeProfile && (
+          <StickerScreen profile={activeProfile} onBack={() => setScreen('menu')} />
+        )}
       </View>
 
       <ProfileModal
@@ -224,8 +240,14 @@ export default function App() {
         isNew={!profileModal.editingId}
         initial={
           editingProfile
-            ? { name: editingProfile.name, hat: editingProfile.hat, color: editingProfile.color, difficulty: editingProfile.difficulty }
-            : { name: '', hat: 'plain', color: suggestColor(profiles), difficulty: 'easy' }
+            ? {
+                name: editingProfile.name,
+                hat: editingProfile.hat,
+                color: editingProfile.color,
+                difficulty: editingProfile.difficulty,
+                quizLength: editingProfile.quizLength ?? DEFAULT_QUIZ_LENGTH,
+              }
+            : { name: '', hat: 'plain', color: suggestColor(profiles), difficulty: 'easy', quizLength: DEFAULT_QUIZ_LENGTH }
         }
         onClose={() => setProfileModal({ open: false, editingId: null })}
         onSave={handleSaveProfile}

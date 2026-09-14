@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // @ts-ignore - art.js 는 순수 JS.
 import { HAT_IDS } from '../art';
-import { Difficulty, Profile } from '../types/word';
-import { stickerForStep } from '../utils/stickers';
+import { DEFAULT_QUIZ_LENGTH, Difficulty, Profile } from '../types/word';
+import { pickSticker } from '../utils/stickers';
 
 const PROFILES_KEY = 'slimewords/profiles';
 const ACTIVE_KEY = 'slimewords/activeProfileId';
@@ -18,14 +18,29 @@ function newProfile(name: string, color: string, hat: string): Profile {
     hat: HAT_IDS.includes(hat) ? hat : 'plain',
     color,
     difficulty: 'easy',
-    progress: { currentStep: 0, completedSteps: [], learnedWordCount: 0 },
+    quizLength: DEFAULT_QUIZ_LENGTH,
+    progress: { currentStep: 0, completedSteps: [], learnedWordCount: 0, stickers: [] },
+  };
+}
+
+// 예전 버전에서 만든 프로필엔 stickers/quizLength 필드가 없다 — 없으면
+// 기본값으로 채워서 항상 있다고 믿고 코드를 짤 수 있게 한다.
+function normalize(profile: Profile): Profile {
+  const needsStickers = !Array.isArray(profile.progress.stickers);
+  const needsQuizLength = typeof profile.quizLength !== 'number';
+  if (!needsStickers && !needsQuizLength) return profile;
+  return {
+    ...profile,
+    quizLength: needsQuizLength ? DEFAULT_QUIZ_LENGTH : profile.quizLength,
+    progress: needsStickers ? { ...profile.progress, stickers: [] } : profile.progress,
   };
 }
 
 export async function loadProfiles(): Promise<Profile[]> {
   try {
     const raw = await AsyncStorage.getItem(PROFILES_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed: Profile[] = raw ? JSON.parse(raw) : [];
+    return parsed.map(normalize);
   } catch {
     return [];
   }
@@ -75,7 +90,7 @@ export async function setDifficulty(profileId: string, difficulty: Difficulty): 
 
 export async function updateProfile(
   profileId: string,
-  patch: { name: string; hat: string; color: string; difficulty: Difficulty }
+  patch: { name: string; hat: string; color: string; difficulty: Difficulty; quizLength: number }
 ): Promise<Profile[]> {
   const profiles = await loadProfiles();
   const next = profiles.map((p) => (p.id === profileId ? { ...p, ...patch } : p));
@@ -86,21 +101,23 @@ export async function updateProfile(
 export async function resetProgress(profileId: string): Promise<Profile[]> {
   const profiles = await loadProfiles();
   const next = profiles.map((p) =>
-    p.id === profileId ? { ...p, progress: { currentStep: 0, completedSteps: [], learnedWordCount: 0 } } : p
+    p.id === profileId
+      ? { ...p, progress: { currentStep: 0, completedSteps: [], learnedWordCount: 0, stickers: [] } }
+      : p
   );
   await saveProfiles(next);
   return next;
 }
 
-// 테스트를 보고 나면 여기로 온다. 통과 점수(70점) 이상이고 아직 안 깬
-// 스텝이면 맵에서 한 칸 전진하고 스티커를 새로 딴다. 이미 깬 스텝을 다시
-// 봐서 점수만 더 잘 나온 경우엔 기록만 갱신하고 전진하지는 않는다(중복 전진 방지).
+// 테스트를 보고 나면 여기로 온다. 통과(70점 이상)할 때마다 — 이미 깬
+// 스텝을 다시 봐도 — 스티커를 한 장 받는다. "다음 스텝으로 넘어가는 것"은
+// 그와 별개로, 지금 스텝을 처음 깼을 때만 한 번 일어난다(중복 전진 방지).
 export async function completeStep(
   profileId: string,
   step: number,
   score: number,
   wordCount: number
-): Promise<{ profiles: Profile[]; passed: boolean; advanced: boolean } | null> {
+): Promise<{ profiles: Profile[]; passed: boolean; advanced: boolean; earnedStickerId: string | null } | null> {
   const profiles = await loadProfiles();
   const idx = profiles.findIndex((p) => p.id === profileId);
   if (idx < 0) return null;
@@ -110,12 +127,15 @@ export async function completeStep(
   const alreadyDone = profile.progress.completedSteps.some((s) => s.step === step);
   const isCurrent = step === profile.progress.currentStep;
   const advanced = passed && isCurrent && !alreadyDone;
-  const stickerId = stickerForStep(step).id;
+
+  const earnedSticker = passed ? pickSticker(profile.progress.stickers) : null;
+  const earnedStickerId: string | null = earnedSticker?.id ?? null;
+  const nextStickers = earnedStickerId ? [...profile.progress.stickers, earnedStickerId] : profile.progress.stickers;
 
   const nextRecords = alreadyDone
     ? profile.progress.completedSteps.map((s) => (s.step === step && score > s.score ? { ...s, score } : s))
     : passed
-      ? [...profile.progress.completedSteps, { step, score, earnedAt: Date.now(), stickerId }]
+      ? [...profile.progress.completedSteps, { step, score, earnedAt: Date.now() }]
       : profile.progress.completedSteps;
 
   const nextProfile: Profile = {
@@ -124,6 +144,7 @@ export async function completeStep(
       currentStep: advanced ? profile.progress.currentStep + 1 : profile.progress.currentStep,
       completedSteps: nextRecords,
       learnedWordCount: advanced ? profile.progress.learnedWordCount + wordCount : profile.progress.learnedWordCount,
+      stickers: nextStickers,
     },
   };
 
@@ -131,5 +152,5 @@ export async function completeStep(
   nextProfiles[idx] = nextProfile;
   await saveProfiles(nextProfiles);
 
-  return { profiles: nextProfiles, passed, advanced };
+  return { profiles: nextProfiles, passed, advanced, earnedStickerId };
 }
